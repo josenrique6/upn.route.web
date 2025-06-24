@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Optimización de Rutas Mejorada</title>
+  <!-- 1) Enlace a Bootstrap 5 desde CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor principal en formato Flex */
+    #container {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Columna izquierda para el mapa */
+    #leftColumn {
+      flex: 0.75;
+      margin: 5px;
+    }
+
+    /* Columna derecha para el formulario y listado */
+    #rightColumn {
+      flex: 2.25;
+      margin: 5px;
+      overflow-y: auto;
+    }
+
+    /* Opcional: ajustar el contenedor para que ocupe toda la ventana */
+    .container-fluid {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Estilo del mapa */
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    .route-border {
+      stroke: rgb(255, 255, 255);
+      stroke-opacity: 0.9;
+      stroke-width: 11;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      color: red;
+    }
+
+    .custom-html-icon-div {
+      margin-top: -23px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      background: blue;
+      border: 2px solid rgb(51, 51, 51);
+      box-shadow: 0 2px 1px 2px rgba(0, 0, 0, 0.2),
+        0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .leaflet-div-icon {
+      background: transparent;
+      border: 0;
+    }
+
+    /* Estilos para el formulario y listado */
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    label {
+      margin-right: 5px;
+    }
+
+    #locationsList {
+      margin-top: 10px;
+      padding: 0;
+      list-style: none;
+    }
+
+    #locationsList li {
+      margin-bottom: 5px;
+      padding: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .custom-html-icon-txt {
+      transform: rotate(+45deg) !important;
+      height: 21px;
+      font-weight: 600;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Contenedor fluido de Bootstrap -->
+  <div class="container-fluid">
+    <div class="row h-100">
+      <!-- Columna Izquierda: Formulario (col-12 en móvil, col-4 en pantallas medianas o mayores) -->
+      <div class="col-12 col-md-3 bg-light p-4 d-flex flex-column" style="zoom: 80%;">
+        <h2 class="mb-3">Optimización de Rutas</h2>
+
+        <!-- Formulario con clases de Bootstrap -->
+        <div class="mb-3">
+          <label class="form-label">Ubicaciones (lat, lng):</label>
+          <input type="text" id="locations" class="form-control" readonly />
+        </div>
+
+        <div class="mb-3 form-check">
+          <input type="checkbox" id="roundTrip" name="roundTrip" class="form-check-input" />
+          <label for="roundTrip" class="form-check-label">Ruta Cerrada (Round Trip)</label>
+        </div>
+
+        <div class="mb-3">
+          <label for="optimizeBy" class="form-label">Optimizar por:</label>
+          <select id="optimizeBy" name="optimizeBy" class="form-select">
+            <option value="time" selected>Tiempo</option>
+            <option value="distance">Distancia</option>
+          </select>
+        </div>
+        <!-- Hora de salida -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label for="startHour" class="form-label">Hora de Salida</label>
+            <input type="number" class="form-control" id="startHour" min="0" max="23" value="12" />
+          </div>
+          <div class="col-6">
+            <label for="startMinute" class="form-label">Minuto de Salida</label>
+            <input type="number" class="form-control" id="startMinute" min="0" max="59" value="00" />
+          </div>
+        </div>
+
+        <!-- Botón y área colapsable para la configuración del camión -->
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#truckConfig"
+          aria-expanded="false" aria-controls="truckConfig">
+          Mostrar/Ocultar Configuración del Camión
+        </button>
+
+
+        <div class="collapse" id="truckConfig">
+          <div class="row g-2 mb-3">
+            <!-- Configuración de Camión -->
+            <h5 class="mt-2">Configuración del Camión</h5>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="axleload" class="form-label">Axleload (ton)</label>
+                <input type="number" class="form-control" id="axleload" step="0.1" value="0" />
+              </div>
+              <div class="col-6">
+                <label for="height" class="form-label">Altura (m)</label>
+                <input type="number" class="form-control" id="height" step="0.1" value="6" />
+              </div>
+              <div class="col-6">
+                <label for="length" class="form-label">Longitud (m)</label>
+                <input type="number" class="form-control" id="length" step="0.01" value="7" />
+              </div>
+              <div class="col-6">
+                <label for="weight" class="form-label">Peso (ton)</label>
+                <input type="number" class="form-control" id="weight" step="0.1" value="3" />
+              </div>
+              <div class="col-6">
+                <label for="width" class="form-label">Ancho (m)</label>
+                <input type="number" class="form-control" id="width" step="0.1" value="2.6" />
+              </div>
+              <div class="col-6 d-flex align-items-center">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="hazmat" />
+                  <label class="form-check-label" for="hazmat">
+                    Material Peligroso (Hazmat)
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <button onclick="optimizeRoute()" class="btn btn-primary me-2">
+            Optimizar Ruta
+          </button>
+          <button onclick="clearMarkers()" class="btn btn-secondary">
+            Limpiar Ubicaciones
+          </button>
+        </div>
+
+        <h4>Listado de Ubicaciones</h4>
+        <!-- Usamos list-group de Bootstrap para el listado -->
+        <ul id="locationsList" class="list-group flex-grow-1 overflow-auto" style="max-height: 300px"></ul>
+      </div>
+
+      <!-- Columna Derecha: Mapa (col-12 en móvil, col-8 en pantallas medianas o mayores) -->
+      <div class="col-12 col-md-9 map-container">
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@mapbox/polyline"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script>
+    let map = L.map("map").setView([-12.0464, -77.0428], 12);
+    let markers = [];
+    let locations = []; // Cada elemento: [lng, lat]
+    let depotIndex = 0; // Por defecto, el primer nodo es depot
+
+    // Cargar mapa base
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    // Agregar marcador al hacer clic en el mapa
+    map.on("click", function (e) {
+      let lat = e.latlng.lat.toFixed(6);
+      let lng = e.latlng.lng.toFixed(6);
+      // Crear marcador con icono que muestra el número (se actualizará luego)
+      let marker = L.marker([lat, lng], {
+        draggable: true,
+        icon: L.divIcon({
+          html: `<div class="custom-html-icon-div">${markers.length + 1
+            }</div>`,
+          iconSize: [30, 30],
+          className: "leaflet-div-icon",
+        }),
+      })
+        .bindPopup(
+          `Ubicación: ${lat}, ${lng} <br><small>(Haz clic derecho para eliminar)</small>`
+        )
+        .addTo(map);
+
+      // Eliminar marcador con clic derecho
+      marker.on("contextmenu", function () {
+        map.removeLayer(marker);
+        let index = markers.indexOf(marker);
+        markers.splice(index, 1);
+        locations.splice(index, 1);
+        // Si se eliminó el depot, se reasigna el primero por defecto
+        if (depotIndex === index) depotIndex = 0;
+        updateLocationList();
+        updateMarkers();
+        updateLocationInput();
+      });
+
+      // Actualizar ubicación al arrastrar el marcador
+      marker.on("dragend", function (event) {
+        let newLat = event.target.getLatLng().lat.toFixed(6);
+        let newLng = event.target.getLatLng().lng.toFixed(6);
+        let index = markers.indexOf(marker);
+        locations[index] = [newLng, newLat];
+        updateLocationInput();
+        updateLocationList();
+      });
+
+      markers.push(marker);
+      locations.push([lng, lat]);
+      updateMarkers();
+      updateLocationInput();
+      updateLocationList();
+    });
+
+    // Actualizar el campo de texto con las ubicaciones
+    function updateLocationInput() {
+      document.getElementById("locations").value = locations
+        .map((loc) => `${loc[1]},${loc[0]}`)
+        .join("; ");
+    }
+
+    // Actualizar la numeración en los marcadores
+    function updateMarkers() {
+      markers.forEach((marker, i) => {
+        marker.setIcon(
+          L.divIcon({
+            html: `<div class="custom-html-icon-div"><div class="custom-html-icon-txt">${i + 1
+              }</div></div>`,
+            iconSize: [30, 30],
+            className: "leaflet-div-icon",
+          })
+        );
+      });
+    }
+
+    function getDepartureSeconds() {
+      let startHour = parseInt(document.getElementById('startHour').value) || 0;
+      let startMinute = parseInt(document.getElementById('startMinute').value) || 0;
+      return startHour * 3600 + startMinute * 60;
+    }
+
+    function updateLocationList() {
+      const listContainer = document.getElementById("locationsList");
+      listContainer.innerHTML = "";
+
+      locations.forEach((loc, i) => {
+        // 1) Creamos un <li> con estilo Bootstrap
+        let li = document.createElement("li");
+        li.classList.add("list-group-item");
+
+        // 2) Creamos una fila con "row align-items-center g-2" para agrupar todo en una sola línea
+        let row = document.createElement("div");
+        row.classList.add("row", "align-items-center", "g-2");
+
+        // === Columna 1: Índice, coords y radio para depot ===
+        let colCoords = document.createElement("div");
+        colCoords.classList.add("col-auto");
+        // Texto de índice y coordenadas
+        colCoords.innerHTML = `<strong>${i + 1}.</strong> (${loc[1]}, ${loc[0]}) `;
+        
+        // Radio para marcar depot
+        let radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "depotRadio";
+        radio.value = i;
+        radio.classList.add("ms-2");
+        if (i === depotIndex) {
+          radio.checked = true;
+        }
+        radio.addEventListener("change", function() {
+          depotIndex = parseInt(this.value);
+          console.log("Nuevo depot seleccionado:", depotIndex);
+        });
+        colCoords.appendChild(radio);
+
+        // === Columna 2: Checkbox para activar/desactivar la ventana horaria ===
+        let colSwitch = document.createElement("div");
+        colSwitch.classList.add("col-auto");
+        colSwitch.innerHTML = `
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="timeWindowSwitch-${i}" />
+            <label class="form-check-label" for="timeWindowSwitch-${i}">Ventana Horaria</label>
+          </div>
+        `;
+        let switchInput = colSwitch.querySelector("input");
+
+        // === Columna 3: Time picker "Inicio" ===
+        let colStart = document.createElement("div");
+        colStart.classList.add("col-auto");
+        colStart.innerHTML = `
+          <label class="form-label mb-1 d-block">Inicio</label>
+          <input
+            type="text"
+            placeholder="HH:MM:SS"
+            class="form-control timepicker"
+            style="max-width:120px;"
+            disabled
+          />
+        `;
+        let startInput = colStart.querySelector("input");
+
+        // === Columna 4: Time picker "Fin" ===
+        let colEnd = document.createElement("div");
+        colEnd.classList.add("col-auto");
+        colEnd.innerHTML = `
+          <label class="form-label mb-1 d-block">Fin</label>
+          <input
+            type="text"
+            placeholder="HH:MM:SS"
+            class="form-control timepicker"
+            style="max-width:120px;"
+            disabled
+          />
+        `;
+        let endInput = colEnd.querySelector("input");
+
+        // Inicializamos valores si la ubicación ya tiene timeWindow
+        if (loc.timeWindow && loc.timeWindow.length === 2) {
+          // Marcamos el switch como activo
+          switchInput.checked = true;
+          // Habilitamos inputs
+          startInput.disabled = false;
+          endInput.disabled = false;
+          // Mostramos valor en formato HH:MM:SS
+          startInput.value = secondsToTime(loc.timeWindow[0] + getDepartureSeconds());
+          endInput.value = secondsToTime(loc.timeWindow[1] + getDepartureSeconds());
+        }
+
+        // Eventos para el switch: habilitar/deshabilitar time pickers
+        switchInput.addEventListener("change", function() {
+          let checked = this.checked;
+          startInput.disabled = !checked;
+          endInput.disabled = !checked;
+          if (!checked) {
+            // Desactivar la ventana horaria => loc.timeWindow = null
+            loc.timeWindow = null;
+            startInput.value = "";
+            endInput.value = "";
+          } else {
+            // Activar => si no hay valores previos, poner [0,0]
+            if (!loc.timeWindow) {
+              loc.timeWindow = [0,0];
+            }
+            // Por defecto, mostrarlos como la hora de salida
+            let departureSec = getDepartureSeconds();
+            startInput.value = secondsToTime(departureSec);
+            endInput.value = secondsToTime(departureSec);
+          }
+        });
+
+        // Eventos para cambiar los time pickers
+        startInput.addEventListener("change", function() {
+          if (!loc.timeWindow) return;
+          let departureSec = getDepartureSeconds();
+          let inputSeconds = timeToSeconds(this.value);
+          let relativeStart = inputSeconds - departureSec;
+          if(relativeStart < 0) relativeStart = 0;
+          loc.timeWindow[0] = relativeStart;
+        });
+        endInput.addEventListener("change", function() {
+          if (!loc.timeWindow) return;
+          let departureSec = getDepartureSeconds();
+          let inputSeconds = timeToSeconds(this.value);
+          let relativeEnd = inputSeconds - departureSec;
+          if(relativeEnd < 0) relativeEnd = 0;
+          loc.timeWindow[1] = relativeEnd;
+        });
+
+        // Agregamos columnas a la fila
+        row.appendChild(colCoords);
+        row.appendChild(colSwitch);
+        row.appendChild(colStart);
+        row.appendChild(colEnd);
+
+        // Agregamos la fila al <li>, y <li> al <ul>
+        li.appendChild(row);
+        listContainer.appendChild(li);
+      });
+
+      // Inicializar flatpickr en los inputs con la clase "timepicker"
+      flatpickr(".timepicker", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i:S",
+        time_24hr: true
+      });
+    }
+
+    // Funciones para convertir entre segundos y formato HH:MM:SS
+    function timeToSeconds(timeStr) {
+      // Se espera formato "HH:MM:SS"
+      let parts = timeStr.split(":");
+      if(parts.length !== 3) return 0;
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+
+    function secondsToTime(seconds) {
+      let hrs = Math.floor(seconds / 3600);
+      let mins = Math.floor((seconds % 3600) / 60);
+      let secs = seconds % 60;
+      return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }    
+
+    // Limpiar todos los marcadores y la lista
+    function clearMarkers() {
+      markers.forEach((marker) => map.removeLayer(marker));
+      markers = [];
+      locations = [];
+      depotIndex = 0;
+      updateLocationInput();
+      updateLocationList();
+    }
+
+    // Función para optimizar la ruta
+    function optimizeRoute() {
+      if (locations.length === 0) {
+        alert("Selecciona al menos una ubicación en el mapa.");
+        return;
+      }
+
+      let roundTrip = document.getElementById('roundTrip').checked;
+      let optimizeBy = document.getElementById('optimizeBy').value;
+
+      // Tomar la hora de salida
+      let startHour = parseInt(document.getElementById('startHour').value) || 0;
+      let startMinute = parseInt(document.getElementById('startMinute').value) || 0;
+
+      // Tomar los parámetros del camión
+      let axleload = parseFloat(document.getElementById('axleload').value) || 10;
+      let height = parseFloat(document.getElementById('height').value) || 6;
+      let length = parseFloat(document.getElementById('length').value) || 8.35;
+      let weight = parseFloat(document.getElementById('weight').value) || 18;
+      let width = parseFloat(document.getElementById('width').value) || 2.3;
+      let hazmat = document.getElementById('hazmat').checked;
+
+      const payload = {
+        round_trip: roundTrip,
+        optimize_by: optimizeBy,
+        depot_index: depotIndex,
+        locations: locations.map((loc, index) => {
+          let locObj = {
+            coordinates: [loc[0].toString(), loc[1].toString()],
+          };
+          if (loc.timeWindow) {
+            locObj.time_window = loc.timeWindow;
+          }
+          return locObj;
+        }),
+        start_hour: startHour,
+        start_minute: startMinute,
+        truck_options: {
+          axleload: axleload,
+          height: height,
+          length: length,
+          weight: weight,
+          width: width,
+          hazmat: hazmat
+        }
+      };
+
+      console.log("Payload a enviar:", payload);
+
+      fetch("http://127.0.0.1:8000/api/v1/optimize-route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Optimización exitosa", data);
+
+          // Validar respuesta
+          if (
+            !data.optimized_route ||
+            !Array.isArray(data.optimized_route) ||
+            data.optimized_route.length === 0
+          ) {
+            console.error(
+              "Error: optimized_route no está definido o está vacío"
+            );
+            return;
+          }
+          if (!data.route_segments || !Array.isArray(data.route_segments)) {
+            console.error("Error: route_segments no está definido");
+            return;
+          }
+
+          // Actualizar los marcadores con colores según la ruta óptima
+          updateRouteMarkers(data.optimized_route);
+
+          // Limpiar rutas anteriores en el mapa
+          map.eachLayer((layer) => {
+            if (layer instanceof L.Polyline || layer instanceof L.Circle) {
+              map.removeLayer(layer);
+            }
+          });
+
+          // Dibujar cada tramo de la ruta
+          data.route_segments.forEach((segment) => {
+            let decodedCoords = polyline
+              .decode(segment.polyline)
+              .map((coord) => [coord[0], coord[1]]);
+
+            // Dibujo del borde de la ruta
+            L.polyline(decodedCoords, {
+              color: "#fff",
+              weight: 9,
+              opacity: 1,
+            }).addTo(map);
+
+            // Dibujo de la línea principal
+            L.polyline(decodedCoords, {
+              color: "#cc3d3d",
+              weight: 6,
+              opacity: 1,
+            }).addTo(map).bindPopup(`
+            <b>${formatTimeReadable(data.total_duration)}</b><br>
+            <span>${Math.round(data.total_distance / 1000)} km</span> 
+          `);
+          });
+
+          // Agregar geocercas a cada punto de la ruta
+          /*data.optimized_route.forEach((pointIndex) => {
+        let pointCoords = locations[pointIndex]; // Obtener coordenadas
+        L.circle([pointCoords[1], pointCoords[0]], { // Invertir lat, lng
+          radius: 250,
+          color: "gray",                        
+          fillColor: "gray",
+          fillOpacity: 0.3
+        }).bindPopup(`Geocerca - Punto ${pointIndex}`).addTo(map);
+      });*/
+
+          // Ajustar vista del mapa a la ruta optimizada
+          let bounds = L.latLngBounds(
+            data.optimized_route.map((pointIndex) => [
+              locations[pointIndex][1],
+              locations[pointIndex][0],
+            ])
+          );
+          map.fitBounds(bounds);
+        })
+        .catch((error) => console.error("Error en la optimización", error));
+    }
+
+    // Función para formatear tiempo en formato legible
+    function formatTimeReadable(seconds) {
+      let hours = Math.floor(seconds / 3600);
+      let minutes = Math.floor((seconds % 3600) / 60);
+      let secs = seconds % 60;
+      let result = [];
+      if (hours > 0) result.push(`${hours} h`);
+      if (minutes > 0) result.push(`${Math.round(minutes)} min`);
+      if (secs > 0 || result.length === 0)
+        result.push(`${Math.round(secs)} s`);
+      return result.join(" ");
+    }
+
+    // Función para actualizar los iconos de los marcadores según la ruta óptima
+    function updateRouteMarkers(routeOrder) {
+      // routeOrder es un array con el orden de los índices de las ubicaciones en la ruta óptima
+      routeOrder.forEach((nodeIndex, i) => {
+        let color;
+        if (i === 0) {
+          color = "green"; // Primer nodo: verde (inicio)
+        } else if (i === routeOrder.length - 1) {
+          color = "red"; // Último nodo: rojo (final)
+        } else {
+          color = "blue"; // Intermedios: azul (puedes elegir otro color)
+        }
+        // Actualiza el icono del marcador correspondiente a la ubicación
+        markers[nodeIndex].setIcon(
+          L.divIcon({
+            html: `<div class="custom-html-icon-div" style="background: ${color};">
+                  <div class="custom-html-icon-txt">${i + 1}</div>
+                </div>`,
+            iconSize: [30, 30],
+            className: "leaflet-div-icon",
+          })
+        );
+      });
+    }
+  </script>
+</body>
+
+</html>
