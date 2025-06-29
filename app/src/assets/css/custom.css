@@ -105,26 +105,18 @@
   border: 2px solid currentColor;
 }
 
-.legend-color.blue { background: blue; }
-.legend-color.orange { background: orange; }
-.legend-color.green { background: green; }
-.legend-color.red { background: red; }
-.legend-color.purple { background: purple; }
-.legend-color.yellow { background: yellow; }
-.legend-color.gray { background: gray; }
-.legend-color.vehicle1 { background: #d6b3f0; }
-.legend-color.vehicle2 { background: #c9b1f7; }
+.legend-color.blue { background: #d6b3f0; }
+.legend-color.orange { background: #c9b1f7; }
+.legend-color.green { background: #bdbbf9; }
+.legend-color.red { background: #abbaf8; }
+.legend-color.purple { background: #99c2fa; }
+.legend-color.yellow { background: #89c8ff; }
+.legend-color.gray { background: #9ed0ff; }
 
 
 html, body, #root {
   height: 100%;
   margin: 0;
-}
-.demo-bg {
-  background: linear-gradient(135deg, #8ec5fc 0%, #e0c3fc 100%);
-  min-height: 100vh;
-  color: #333;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 .container-fluid.full-vh {
   height: 100vh;
@@ -136,27 +128,8 @@ html, body, #root {
 .left-panel {
   height: 100%;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(6px);
-  border-right: 1px solid #ccc;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 .map-container {
   height: 100%;
   padding: 0; /* para que el mapa no herede padding */
-  border-left: 1px solid #ccc;
-}
-
-.custom-html-icon-div {
-  background: #d6b3f0;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.btn-primary:hover {
-  background-color: #0069d9;
-  border-color: #0062cc;
 }
