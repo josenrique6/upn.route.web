@@ -32,14 +32,14 @@ export default function Optimizer () {
   const legendControlRef = useRef(null);
 
   const truckColors = [
-    "#a5c9e1", // azul pastel
-    "#ffcc9f", // naranja pastel
-    "#abd9ab", // verde pastel
-    "#efa9a9", // rojo pastel
-    "#d4c2e5", // morado pastel
-    "#d1bbb7", // marrón pastel
-    "#f4c9e7", // rosa pastel
-    "#cccccc", // gris claro
+    "#62a0ca", // azul suave
+    "#ffa656", // naranja suave
+    "#6cbc6c", // verde suave
+    "#e26868", // rojo suave
+    "#b494d1", // morado suave
+    "#ae8881", // marrón suave
+    "#eca0d4", // rosa suave
+    "#a6a6a6", // gris suave
   ];
 
   // Carga y dibuja las entregas (markers) + actualiza la lista a la izquierda
@@ -71,7 +71,7 @@ export default function Optimizer () {
         const marker = L.marker([lat, lng], {
           draggable: true,
           icon: L.divIcon({
-          html: `<div class="custom-html-icon-div" style="background: #9999ff;">
+          html: `<div class="custom-html-icon-div" style="background: #4c4cff;">
                   <div class="custom-html-icon-txt">${idx + 1}</div>
                 </div>`,
             iconSize: [30, 30],
@@ -359,9 +359,9 @@ export default function Optimizer () {
           route_nodes.forEach((nodeIndex, i) => {
             let color;
             if (i === 0) {
-              color = "#abd9ab"; // verde pastel
+              color = "#6cbc6c"; // verde suave
             } else if (i === route_nodes.length - 1) {
-              color = "#efa9a9"; // rojo pastel
+              color = "#e26868"; // rojo suave
             } else {
               color = truckColors[vehIdx % truckColors.length];
             }
