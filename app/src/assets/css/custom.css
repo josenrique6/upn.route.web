@@ -10,7 +10,7 @@
     justify-content: center;
     font-weight: bold;
     color: white;
-    background: blue;
+    background: #d6b3f0;
     border: 2px solid rgb(51, 51, 51);
     box-shadow: 0 2px 1px 2px rgba(0, 0, 0, 0.2),
                 0 1px 1px 0 rgba(0, 0, 0, 0.14),
@@ -112,6 +112,8 @@
 .legend-color.purple { background: purple; }
 .legend-color.yellow { background: yellow; }
 .legend-color.gray { background: gray; }
+.legend-color.vehicle1 { background: #d6b3f0; }
+.legend-color.vehicle2 { background: #c9b1f7; }
 
 
 html, body, #root {
@@ -146,7 +148,7 @@ html, body, #root {
 }
 
 .custom-html-icon-div {
-  background: #007bff;
+  background: #d6b3f0;
 }
 
 .btn-primary {

@@ -32,14 +32,14 @@ export default function Optimizer () {
   const legendControlRef = useRef(null);
 
   const truckColors = [
-    "#1f77b4", // azul
-    "#ff7f0e", // naranja
-    "#2ca02c", // verde
-    "#d62728", // rojo
-    "#9467bd", // morado
-    "#8c564b", // marrón
-    "#e377c2", // rosa
-    "#7f7f7f", // gris
+    "#d6b3f0", // lila pastel
+    "#c9b1f7", // lavanda suave
+    "#bdbbf9", // azul lila claro
+    "#abbaf8", // celeste lila
+    "#99c2fa", // azul pastel
+    "#89c8ff", // azul cielo
+    "#9ed0ff", // azul claro
+    "#b2d8ff", // azul muy claro
   ];
 
   // Carga y dibuja las entregas (markers) + actualiza la lista a la izquierda
@@ -71,7 +71,7 @@ export default function Optimizer () {
         const marker = L.marker([lat, lng], {
           draggable: true,
           icon: L.divIcon({
-          html: `<div class="custom-html-icon-div" style="background: 'blue';">
+          html: `<div class="custom-html-icon-div" style="background: #d6b3f0;">
                   <div class="custom-html-icon-txt">${idx + 1}</div>
                 </div>`,
             iconSize: [30, 30],
