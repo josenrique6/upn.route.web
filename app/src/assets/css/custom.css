@@ -118,6 +118,12 @@ html, body, #root {
   height: 100%;
   margin: 0;
 }
+.demo-bg {
+  background: linear-gradient(135deg, #8ec5fc 0%, #e0c3fc 100%);
+  min-height: 100vh;
+  color: #333;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
 .container-fluid.full-vh {
   height: 100vh;
   overflow: 'hidden';
@@ -128,8 +134,27 @@ html, body, #root {
 .left-panel {
   height: 100%;
   overflow-y: auto;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  border-right: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 .map-container {
   height: 100%;
   padding: 0; /* para que el mapa no herede padding */
+  border-left: 1px solid #ccc;
+}
+
+.custom-html-icon-div {
+  background: #007bff;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.btn-primary:hover {
+  background-color: #0069d9;
+  border-color: #0062cc;
 }
