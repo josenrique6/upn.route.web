@@ -10,7 +10,7 @@
     justify-content: center;
     font-weight: bold;
     color: white;
-    background: #d6b3f0;
+    background: #9999ff;
     border: 2px solid rgb(51, 51, 51);
     box-shadow: 0 2px 1px 2px rgba(0, 0, 0, 0.2),
                 0 1px 1px 0 rgba(0, 0, 0, 0.14),
@@ -105,13 +105,13 @@
   border: 2px solid currentColor;
 }
 
-.legend-color.blue { background: #d6b3f0; }
-.legend-color.orange { background: #c9b1f7; }
-.legend-color.green { background: #bdbbf9; }
-.legend-color.red { background: #abbaf8; }
-.legend-color.purple { background: #99c2fa; }
-.legend-color.yellow { background: #89c8ff; }
-.legend-color.gray { background: #9ed0ff; }
+.legend-color.blue { background: #a5c9e1; }
+.legend-color.orange { background: #ffcc9f; }
+.legend-color.green { background: #abd9ab; }
+.legend-color.red { background: #efa9a9; }
+.legend-color.purple { background: #d4c2e5; }
+.legend-color.yellow { background: #ffff99; }
+.legend-color.gray { background: #cccccc; }
 
 
 html, body, #root {
