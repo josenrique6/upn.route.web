@@ -35,11 +35,11 @@ export default function Optimizer () {
 
   const truckColors = [
     "#1f77b4", // azul
-    "#17a2b8", // teal
+    "#00bcd4", // cyan
     "#2ca02c", // verde
     "#6f42c1", // morado oscuro
-    "#9467bd", // morado claro
-    "#20c997", // verde menta
+    "#f1c40f", // amarillo
+    "#ff66c4", // rosa fuerte
     "#e377c2", // rosa
     "#7f7f7f", // gris
   ];
@@ -621,6 +621,13 @@ export default function Optimizer () {
 
   return (
     <div className="container-fluid full-vh">
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      )}
       <div className="row full-height">
         {/* Panel izquierdo: parámetros + listado de entregas */}
         <div className="col-12 col-md-3 bg-light left-panel overflow-auto p-4 d-flex flex-column" style={{ zoom: "80%" }}>
@@ -724,7 +731,7 @@ export default function Optimizer () {
           {/* Botones de acción */}
           <div className="mb-3">
             <button onClick={optimizeRoute} className="btn btn-primary me-2" disabled={loading}>
-              {loading ? 'Cargando...' : 'Optimizar Ruta'}
+              Optimizar Ruta
             </button>
             <button onClick={clearMarkers} className="btn btn-secondary">
               Limpiar Ubicaciones
