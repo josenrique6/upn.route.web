@@ -496,23 +496,10 @@ export default function Optimizer () {
           zIndex: 1000
         });
         div.innerHTML = `
-          <h4 style="margin:0 0 6px;">Tipos de Ubicaciones</h4>
+          <h4 style="margin:0 0 6px;">Marcadores</h4>
           <div class="legend-item"><span class="legend-color blue"></span> Entrega</div>
-          <div class="legend-item"><span class="legend-color orange"></span> Recojo</div>
-          <div class="legend-item"><span class="legend-color green"></span> Colecta</div>
-          <div class="legend-item"><span class="legend-color red"></span> Origen</div>
-          <div class="legend-item"><span class="legend-color purple"></span> Destino</div>
-          <div class="legend-item"><span class="legend-color yellow"></span> Origen/Destino</div>
-          <div class="legend-item"><span class="legend-color gray"></span> No Asignado</div>
-          <h4 style="margin:8px 0 6px;">Prioridades</h4>
-          <div class="legend-item"><span class="legend-border high"></span> Alta</div>
-          <div class="legend-item"><span class="legend-border normal"></span> Normal</div>
-          <div class="legend-item"><span class="legend-border low"></span> Baja</div>
-          <h4 style="margin:8px 0 6px;">Zonas Restringidas</h4>
-          <div class="legend-item"><span class="restricted-zone"></span> Zona no permitida</div>
-          <h4 style="margin:8px 0 6px;">Vehículos</h4>
-          <div class="legend-item"><span class="legend-color vehicle1"></span> Vehículo 1</div>
-          <div class="legend-item"><span class="legend-color vehicle2"></span> Vehículo 2</div>
+          <div class="legend-item"><span class="legend-color" style="background:#2ca02c"></span> Inicio</div>
+          <div class="legend-item"><span class="legend-color" style="background:#d62728"></span> Fin</div>
         `;
         return div;
       };
