@@ -513,8 +513,13 @@ export default function Optimizer () {
                         </li>`;
               })
               .join('');
+            const distKm = (route.vehicle_distance / 1000).toFixed(1);
+            const durMin = (route.vehicle_duration / 60).toFixed(1);
             return `<div style="margin-bottom:6px;">
                       <strong>Ruta ${rIdx + 1} (${route.vehicle_id})</strong>
+                      <div style="font-size:12px;margin-bottom:2px;">
+                        ${distKm} km – ${durMin} min
+                      </div>
                       <ul style="padding-left:0;margin:2px 0 0;">${items}</ul>
                     </div>`;
           })
@@ -657,6 +662,11 @@ export default function Optimizer () {
 
   return (
     <div className="container-fluid full-vh">
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner-border text-primary" role="status" />
+        </div>
+      )}
       <div className="row full-height">
         {/* Panel izquierdo: parámetros + listado de entregas */}
         <div className="col-12 col-md-3 bg-light left-panel overflow-auto p-4 d-flex flex-column" style={{ zoom: "80%" }}>
