@@ -21,6 +21,8 @@ export default function Optimizer () {
   const depotIndexRef = useRef(0);
   //const [truckConfigOpen, setTruckConfigOpen] = useState(false);
   const [optimizationError, setOptimizationError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   // Estado para pegar/parsear JSON de camiones
   const [trucksJSON, setTrucksJSON] = useState("");
   const [trucksData, setTrucksData] = useState([]); // array de objetos { id, capacity, axleload, ... }
@@ -33,11 +35,11 @@ export default function Optimizer () {
 
   const truckColors = [
     "#1f77b4", // azul
-    "#ff7f0e", // naranja
+    "#00bcd4", // cyan
     "#2ca02c", // verde
-    "#d62728", // rojo
-    "#9467bd", // morado
-    "#8c564b", // marrón
+    "#6f42c1", // morado oscuro
+    "#f1c40f", // amarillo
+    "#ff66c4", // rosa fuerte
     "#e377c2", // rosa
     "#7f7f7f", // gris
   ];
@@ -315,6 +317,10 @@ export default function Optimizer () {
       })),
     };
 
+    setLoading(true);
+    setOptimizationError(null);
+    setSuccessMessage("");
+
     fetch("http://localhost:8000/api/v1/optimize/route", {
       method: "POST",
       headers: {
@@ -341,6 +347,7 @@ export default function Optimizer () {
         if (!data.routes || !Array.isArray(data.routes) || data.routes.length === 0) {
           setOptimizationError("No se encontraron rutas (campo 'routes'). Verificar los datos ingresados.");
           console.error("Error: data.routes no está definido o está vacío");
+          setLoading(false);
           return;
         }
 
@@ -361,7 +368,7 @@ export default function Optimizer () {
             if (i === 0) {
               color = "#2ca02c"; // verde oscuro
             } else if (i === route_nodes.length - 1) {
-              color = "#d62728"; // rojo oscuro
+              color = "#6f42c1"; // morado oscuro
             } else {
               color = truckColors[vehIdx % truckColors.length];
             }
@@ -421,8 +428,14 @@ export default function Optimizer () {
         if (infoControlRef.current) {
           infoControlRef.current.update(data);
         }
+        setSuccessMessage("Optimización completada");
+        setLoading(false);
       })
-      .catch((error) => console.error("Error en la optimización", error));
+      .catch((error) => {
+        console.error("Error en la optimización", error);
+        setOptimizationError("Error en la optimización");
+        setLoading(false);
+      });
   };
 
   // Función para cerrar sesión: remueve el token y redirige a /login
@@ -608,6 +621,13 @@ export default function Optimizer () {
 
   return (
     <div className="container-fluid full-vh">
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      )}
       <div className="row full-height">
         {/* Panel izquierdo: parámetros + listado de entregas */}
         <div className="col-12 col-md-3 bg-light left-panel overflow-auto p-4 d-flex flex-column" style={{ zoom: "80%" }}>
@@ -702,10 +722,15 @@ export default function Optimizer () {
               {optimizationError}
             </div>
           )}
+          {successMessage && (
+            <div className="alert alert-success" role="alert">
+              {successMessage}
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="mb-3">
-            <button onClick={optimizeRoute} className="btn btn-primary me-2">
+            <button onClick={optimizeRoute} className="btn btn-primary me-2" disabled={loading}>
               Optimizar Ruta
             </button>
             <button onClick={clearMarkers} className="btn btn-secondary">
