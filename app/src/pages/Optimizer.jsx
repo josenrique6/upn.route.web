@@ -24,10 +24,13 @@ export default function Optimizer () {
   // Estado para pegar/parsear JSON de camiones
   const [trucksJSON, setTrucksJSON] = useState("");
   const [trucksData, setTrucksData] = useState([]); // array de objetos { id, capacity, axleload, ... }
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Estado para el JSON de entregas
   const [deliveriesJSON, setDeliveriesJSON] = useState("");
   const [deliveriesData, setDeliveriesData] = useState([]); // array de objetos de entrega
+  const deliveriesDataRef = useRef([]);
   const infoControlRef = useRef(null);
   const legendControlRef = useRef(null);
 
@@ -60,6 +63,7 @@ export default function Optimizer () {
 
       // Guardamos el arreglo completo de entregas (para usar más tarde en la lista)
       setDeliveriesData(parsed);
+      deliveriesDataRef.current = parsed;
 
       // Recorremos cada objeto de entrega y creamos un marker
       parsed.forEach((entrega, idx) => {
@@ -91,6 +95,7 @@ export default function Optimizer () {
             setDeliveriesData((prev) => {
               const newArr = [...prev];
               newArr.splice(i, 1);
+              deliveriesDataRef.current = newArr;
               return newArr;
             });
             updateLocationList();
@@ -111,6 +116,7 @@ export default function Optimizer () {
             if (newArr[i]) {
               newArr[i].coordinates = [newLng.toString(), newLat.toString()];
             }
+            deliveriesDataRef.current = newArr;
             return newArr;
           });
           updateLocationList();
@@ -219,6 +225,7 @@ export default function Optimizer () {
         setDeliveriesData((prev) => {
           const newArr = [...prev];
           newArr.splice(i, 1);
+          deliveriesDataRef.current = newArr;
           return newArr;
         });
         updateMarkers();
@@ -244,6 +251,7 @@ export default function Optimizer () {
     locationsRef.current = [];
     depotIndexRef.current = 0;
     setDeliveriesData([]);
+    deliveriesDataRef.current = [];
     updateLocationInput();
     updateLocationList();
   };
@@ -261,13 +269,18 @@ export default function Optimizer () {
   };
 
   const optimizeRoute = () => {
+    setOptimizationError(null);
+    setSuccessMessage("");
+    setLoading(true);
     if (locationsRef.current.length === 0) {
       alert("Selecciona al menos una ubicación en el mapa.");
+      setLoading(false);
       return;
     }
 
     if (trucksData.length === 0) {
       alert("Debes cargar al menos un camión en el JSON de flota.");
+      setLoading(false);
       return;
     }
 
@@ -421,8 +434,15 @@ export default function Optimizer () {
         if (infoControlRef.current) {
           infoControlRef.current.update(data);
         }
+        setSuccessMessage("Optimización completada con éxito");
       })
-      .catch((error) => console.error("Error en la optimización", error));
+      .catch((error) => {
+        console.error("Error en la optimización", error);
+        setOptimizationError("Ocurrió un error al optimizar la ruta");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   // Función para cerrar sesión: remueve el token y redirige a /login
@@ -445,8 +465,8 @@ export default function Optimizer () {
         const container = L.DomUtil.create('div', 'info-panel leaflet-control');
         // inline styles para evitar desborde
         Object.assign(container.style, {
-          maxHeight: '220px',
-          width: '180px',
+          maxHeight: '260px',
+          width: '220px',
           overflowY: 'auto',
           background: 'rgba(255,255,255,0.95)',
           padding: '8px',
@@ -467,14 +487,48 @@ export default function Optimizer () {
         }
         const km = (data.total_distance / 1000).toFixed(1);
         const mins = (data.total_duration / 60).toFixed(1);
-        const list = data.etas.map(e =>
-          `<li><strong>${e.point_id}:</strong> ${new Date(e.eta_formatted).toLocaleTimeString()}</li>`
-        ).join('');
+        const list = data.routes
+          .map((route, rIdx) => {
+            const items = route.route_nodes
+              .map((nodeIdx, idx) => {
+                let color = '#000';
+                const marker = markersRef.current[nodeIdx];
+                if (marker) {
+                  const html = marker.options?.icon?.options?.html || '';
+                  const match = html.match(/background:\s*([^;]+);/);
+                  if (match) color = match[1];
+                }
+                const pointId = deliveriesDataRef.current[nodeIdx]?.id || nodeIdx;
+                let etaTime = '';
+                if (Array.isArray(data.etas)) {
+                  const etaObj = data.etas.find((e) => e.point_id.toString() === pointId.toString());
+                  if (etaObj) {
+                    etaTime = new Date(etaObj.eta_formatted).toLocaleTimeString();
+                  }
+                }
+                return `<li style="list-style:none;display:flex;align-items:center;">
+                          <span style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                          <span style="margin-right:4px;">${idx + 1}.</span>
+                          <strong>${pointId}</strong>${etaTime ? `: ${etaTime}` : ''}
+                        </li>`;
+              })
+              .join('');
+            const distKm = (route.vehicle_distance / 1000).toFixed(1);
+            const durMin = (route.vehicle_duration / 60).toFixed(1);
+            return `<div style="margin-bottom:6px;">
+                      <strong>Ruta ${rIdx + 1} (${route.vehicle_id})</strong>
+                      <div style="font-size:12px;margin-bottom:2px;">
+                        ${distKm} km – ${durMin} min
+                      </div>
+                      <ul style="padding-left:0;margin:2px 0 0;">${items}</ul>
+                    </div>`;
+          })
+          .join('');
         this._container.innerHTML = `
           <h4 style="margin:0 0 6px;">Resumen de ruta</h4>
           <p style="margin:0 0 8px;"><strong>Distancia:</strong> ${km} km<br>
              <strong>Duración:</strong> ${mins} min</p>
-          <ul style="padding-left:18px; margin:0;">${list}</ul>
+          <div>${list}</div>
         `;
       };
       infoControlRef.current.addTo(map);
@@ -608,6 +662,11 @@ export default function Optimizer () {
 
   return (
     <div className="container-fluid full-vh">
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner-border text-primary" role="status" />
+        </div>
+      )}
       <div className="row full-height">
         {/* Panel izquierdo: parámetros + listado de entregas */}
         <div className="col-12 col-md-3 bg-light left-panel overflow-auto p-4 d-flex flex-column" style={{ zoom: "80%" }}>
@@ -702,11 +761,19 @@ export default function Optimizer () {
               {optimizationError}
             </div>
           )}
+          {successMessage && (
+            <div className="alert alert-success" role="alert">
+              {successMessage}
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="mb-3">
-            <button onClick={optimizeRoute} className="btn btn-primary me-2">
-              Optimizar Ruta
+            <button onClick={optimizeRoute} className="btn btn-primary me-2" disabled={loading}>
+              {loading && (
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              )}
+              {loading ? 'Optimizando...' : 'Optimizar Ruta'}
             </button>
             <button onClick={clearMarkers} className="btn btn-secondary">
               Limpiar Ubicaciones
