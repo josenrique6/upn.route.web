@@ -30,6 +30,7 @@ export default function Optimizer () {
   // Estado para el JSON de entregas
   const [deliveriesJSON, setDeliveriesJSON] = useState("");
   const [deliveriesData, setDeliveriesData] = useState([]); // array de objetos de entrega
+  const deliveriesDataRef = useRef([]);
   const infoControlRef = useRef(null);
   const legendControlRef = useRef(null);
 
@@ -62,6 +63,7 @@ export default function Optimizer () {
 
       // Guardamos el arreglo completo de entregas (para usar más tarde en la lista)
       setDeliveriesData(parsed);
+      deliveriesDataRef.current = parsed;
 
       // Recorremos cada objeto de entrega y creamos un marker
       parsed.forEach((entrega, idx) => {
@@ -93,6 +95,7 @@ export default function Optimizer () {
             setDeliveriesData((prev) => {
               const newArr = [...prev];
               newArr.splice(i, 1);
+              deliveriesDataRef.current = newArr;
               return newArr;
             });
             updateLocationList();
@@ -113,6 +116,7 @@ export default function Optimizer () {
             if (newArr[i]) {
               newArr[i].coordinates = [newLng.toString(), newLat.toString()];
             }
+            deliveriesDataRef.current = newArr;
             return newArr;
           });
           updateLocationList();
@@ -221,6 +225,7 @@ export default function Optimizer () {
         setDeliveriesData((prev) => {
           const newArr = [...prev];
           newArr.splice(i, 1);
+          deliveriesDataRef.current = newArr;
           return newArr;
         });
         updateMarkers();
@@ -246,6 +251,7 @@ export default function Optimizer () {
     locationsRef.current = [];
     depotIndexRef.current = 0;
     setDeliveriesData([]);
+    deliveriesDataRef.current = [];
     updateLocationInput();
     updateLocationList();
   };
@@ -481,14 +487,29 @@ export default function Optimizer () {
         }
         const km = (data.total_distance / 1000).toFixed(1);
         const mins = (data.total_duration / 60).toFixed(1);
-        const list = data.etas.map(e =>
-          `<li><strong>${e.point_id}:</strong> ${new Date(e.eta_formatted).toLocaleTimeString()}</li>`
-        ).join('');
+        const list = data.etas
+          .map((e, idx) => {
+            let color = '#000';
+            const markerIdx = deliveriesDataRef.current.findIndex(
+              (d) => d.id?.toString() === e.point_id.toString()
+            );
+            if (markerIdx > -1) {
+              const html = markersRef.current[markerIdx]?.options?.icon?.options?.html || '';
+              const match = html.match(/background:\s*([^;]+);/);
+              if (match) color = match[1];
+            }
+            return `<li style="list-style:none;display:flex;align-items:center;">
+                      <span style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                      <span style="margin-right:4px;">${idx + 1}.</span>
+                      <strong>${e.point_id}</strong>: ${new Date(e.eta_formatted).toLocaleTimeString()}
+                    </li>`;
+          })
+          .join('');
         this._container.innerHTML = `
           <h4 style="margin:0 0 6px;">Resumen de ruta</h4>
           <p style="margin:0 0 8px;"><strong>Distancia:</strong> ${km} km<br>
              <strong>Duración:</strong> ${mins} min</p>
-          <ul style="padding-left:18px; margin:0;">${list}</ul>
+          <ul style="padding-left:0; margin:0;">${list}</ul>
         `;
       };
       infoControlRef.current.addTo(map);
