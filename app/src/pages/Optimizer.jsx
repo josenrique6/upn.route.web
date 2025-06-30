@@ -465,8 +465,8 @@ export default function Optimizer () {
         const container = L.DomUtil.create('div', 'info-panel leaflet-control');
         // inline styles para evitar desborde
         Object.assign(container.style, {
-          maxHeight: '220px',
-          width: '180px',
+          maxHeight: '260px',
+          width: '220px',
           overflowY: 'auto',
           background: 'rgba(255,255,255,0.95)',
           padding: '8px',
@@ -487,29 +487,43 @@ export default function Optimizer () {
         }
         const km = (data.total_distance / 1000).toFixed(1);
         const mins = (data.total_duration / 60).toFixed(1);
-        const list = data.etas
-          .map((e, idx) => {
-            let color = '#000';
-            const markerIdx = deliveriesDataRef.current.findIndex(
-              (d) => d.id?.toString() === e.point_id.toString()
-            );
-            if (markerIdx > -1) {
-              const html = markersRef.current[markerIdx]?.options?.icon?.options?.html || '';
-              const match = html.match(/background:\s*([^;]+);/);
-              if (match) color = match[1];
-            }
-            return `<li style="list-style:none;display:flex;align-items:center;">
-                      <span style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;"></span>
-                      <span style="margin-right:4px;">${idx + 1}.</span>
-                      <strong>${e.point_id}</strong>: ${new Date(e.eta_formatted).toLocaleTimeString()}
-                    </li>`;
+        const list = data.routes
+          .map((route, rIdx) => {
+            const items = route.route_nodes
+              .map((nodeIdx, idx) => {
+                let color = '#000';
+                const marker = markersRef.current[nodeIdx];
+                if (marker) {
+                  const html = marker.options?.icon?.options?.html || '';
+                  const match = html.match(/background:\s*([^;]+);/);
+                  if (match) color = match[1];
+                }
+                const pointId = deliveriesDataRef.current[nodeIdx]?.id || nodeIdx;
+                let etaTime = '';
+                if (Array.isArray(data.etas)) {
+                  const etaObj = data.etas.find((e) => e.point_id.toString() === pointId.toString());
+                  if (etaObj) {
+                    etaTime = new Date(etaObj.eta_formatted).toLocaleTimeString();
+                  }
+                }
+                return `<li style="list-style:none;display:flex;align-items:center;">
+                          <span style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                          <span style="margin-right:4px;">${idx + 1}.</span>
+                          <strong>${pointId}</strong>${etaTime ? `: ${etaTime}` : ''}
+                        </li>`;
+              })
+              .join('');
+            return `<div style="margin-bottom:6px;">
+                      <strong>Ruta ${rIdx + 1} (${route.vehicle_id})</strong>
+                      <ul style="padding-left:0;margin:2px 0 0;">${items}</ul>
+                    </div>`;
           })
           .join('');
         this._container.innerHTML = `
           <h4 style="margin:0 0 6px;">Resumen de ruta</h4>
           <p style="margin:0 0 8px;"><strong>Distancia:</strong> ${km} km<br>
              <strong>Duración:</strong> ${mins} min</p>
-          <ul style="padding-left:0; margin:0;">${list}</ul>
+          <div>${list}</div>
         `;
       };
       infoControlRef.current.addTo(map);
