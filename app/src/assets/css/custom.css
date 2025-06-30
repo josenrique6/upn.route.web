@@ -117,6 +117,8 @@
 html, body, #root {
   height: 100%;
   margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background-color: #f7f8fa;
 }
 .container-fluid.full-vh {
   height: 100vh;
@@ -128,6 +130,8 @@ html, body, #root {
 .left-panel {
   height: 100%;
   overflow-y: auto;
+  background-color: #ffffff;
+  border-right: 1px solid #ddd;
 }
 .map-container {
   height: 100%;
@@ -145,4 +149,5 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  transition: opacity 0.3s ease;
 }
