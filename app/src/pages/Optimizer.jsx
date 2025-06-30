@@ -24,6 +24,8 @@ export default function Optimizer () {
   // Estado para pegar/parsear JSON de camiones
   const [trucksJSON, setTrucksJSON] = useState("");
   const [trucksData, setTrucksData] = useState([]); // array de objetos { id, capacity, axleload, ... }
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Estado para el JSON de entregas
   const [deliveriesJSON, setDeliveriesJSON] = useState("");
@@ -261,13 +263,18 @@ export default function Optimizer () {
   };
 
   const optimizeRoute = () => {
+    setOptimizationError(null);
+    setSuccessMessage("");
+    setLoading(true);
     if (locationsRef.current.length === 0) {
       alert("Selecciona al menos una ubicación en el mapa.");
+      setLoading(false);
       return;
     }
 
     if (trucksData.length === 0) {
       alert("Debes cargar al menos un camión en el JSON de flota.");
+      setLoading(false);
       return;
     }
 
@@ -421,8 +428,15 @@ export default function Optimizer () {
         if (infoControlRef.current) {
           infoControlRef.current.update(data);
         }
+        setSuccessMessage("Optimización completada con éxito");
       })
-      .catch((error) => console.error("Error en la optimización", error));
+      .catch((error) => {
+        console.error("Error en la optimización", error);
+        setOptimizationError("Ocurrió un error al optimizar la ruta");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   // Función para cerrar sesión: remueve el token y redirige a /login
@@ -702,11 +716,19 @@ export default function Optimizer () {
               {optimizationError}
             </div>
           )}
+          {successMessage && (
+            <div className="alert alert-success" role="alert">
+              {successMessage}
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="mb-3">
-            <button onClick={optimizeRoute} className="btn btn-primary me-2">
-              Optimizar Ruta
+            <button onClick={optimizeRoute} className="btn btn-primary me-2" disabled={loading}>
+              {loading && (
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              )}
+              {loading ? 'Optimizando...' : 'Optimizar Ruta'}
             </button>
             <button onClick={clearMarkers} className="btn btn-secondary">
               Limpiar Ubicaciones
